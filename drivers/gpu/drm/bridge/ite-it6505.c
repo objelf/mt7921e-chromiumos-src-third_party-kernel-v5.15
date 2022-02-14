@@ -6,7 +6,6 @@
 #include <linux/delay.h>
 #include <linux/device.h>
 #include <linux/err.h>
-#include <linux/extcon.h>
 #include <linux/fs.h>
 #include <linux/gpio/consumer.h>
 #include <linux/i2c.h>
@@ -17,6 +16,9 @@
 #include <linux/regmap.h>
 #include <linux/regulator/consumer.h>
 #include <linux/types.h>
+#include <linux/usb/typec.h>
+#include <linux/usb/typec_dp.h>
+#include <linux/usb/typec_mux.h>
 #include <linux/wait.h>
 
 #include <crypto/hash.h>
@@ -308,6 +310,7 @@
 #define HDCP_SHA1_FIFO_LEN (MAX_HDCP_DOWN_STREAM_COUNT * 5 + 10)
 #define DEFAULT_PWR_ON 0
 #define DEFAULT_DRV_HOLD 0
+#define NUMBER_OF_PORT 2
 
 #define AUDIO_SELECT I2S
 #define AUDIO_TYPE LPCM
@@ -402,6 +405,15 @@ struct debugfs_entries {
 	const struct file_operations *fops;
 };
 
+struct it6505;
+
+struct port_data {
+	bool has_dp;
+	struct typec_mux_dev *typec_mux;
+	struct it6505 *ctx;
+	const char *name;
+};
+
 struct it6505 {
 	struct drm_dp_aux aux;
 	struct drm_bridge bridge;
@@ -418,9 +430,6 @@ struct it6505 {
 	struct regmap *regmap;
 	struct drm_display_mode source_output_mode;
 	struct drm_display_mode video_info;
-	struct notifier_block event_nb;
-	struct extcon_dev *extcon;
-	struct work_struct extcon_wq;
 	enum drm_connector_status connector_status;
 	enum link_train_status link_state;
 	struct work_struct link_works;
@@ -454,6 +463,7 @@ struct it6505 {
 	struct delayed_work delayed_audio;
 	struct it6505_audio_data audio;
 	struct dentry *debugfs;
+	struct port_data typec_ports[NUMBER_OF_PORT];
 
 	/* it6505 driver hold option */
 	bool enable_drv_hold;
@@ -1231,24 +1241,6 @@ static int it6505_send_video_infoframe(struct it6505 *it6505,
 	return 0;
 }
 
-static void it6505_get_extcon_property(struct it6505 *it6505)
-{
-	int err;
-	union extcon_property_value property;
-	struct device *dev = &it6505->client->dev;
-
-	if (it6505->extcon && !it6505->lane_swap_disabled) {
-		err = extcon_get_property(it6505->extcon, EXTCON_DISP_DP,
-					  EXTCON_PROP_USB_TYPEC_POLARITY,
-					  &property);
-		if (err) {
-			dev_err(dev, "get property fail!");
-			return;
-		}
-		it6505->lane_swap = property.intval;
-	}
-}
-
 static void it6505_clk_phase_adjustment(struct it6505 *it6505,
 					const struct drm_display_mode *mode)
 {
@@ -1548,7 +1540,6 @@ static inline void it6505_link_rate_setup(struct it6505 *it6505)
 
 static void it6505_lane_count_setup(struct it6505 *it6505)
 {
-	it6505_get_extcon_property(it6505);
 	it6505_set_bits(it6505, REG_TRAIN_CTRL0, LANE_SWAP,
 			it6505->lane_swap ? LANE_SWAP : 0x00);
 	it6505_set_bits(it6505, REG_TRAIN_CTRL0, LANE_COUNT_MASK,
@@ -2675,78 +2666,6 @@ unlock:
 	return status;
 }
 
-static int it6505_extcon_notifier(struct notifier_block *self,
-				  unsigned long event, void *ptr)
-{
-	struct it6505 *it6505 = container_of(self, struct it6505, event_nb);
-
-	schedule_work(&it6505->extcon_wq);
-	return NOTIFY_DONE;
-}
-
-static void it6505_extcon_work(struct work_struct *work)
-{
-	struct it6505 *it6505 = container_of(work, struct it6505, extcon_wq);
-	struct device *dev = &it6505->client->dev;
-	int state = extcon_get_state(it6505->extcon, EXTCON_DISP_DP);
-	unsigned int pwroffretry = 0;
-
-	if (it6505->enable_drv_hold)
-		return;
-
-	mutex_lock(&it6505->extcon_lock);
-
-	DRM_DEV_DEBUG_DRIVER(dev, "EXTCON_DISP_DP = 0x%02x", state);
-	if (state > 0) {
-		DRM_DEV_DEBUG_DRIVER(dev, "start to power on");
-		msleep(100);
-		it6505_poweron(it6505);
-	} else {
-		DRM_DEV_DEBUG_DRIVER(dev, "start to power off");
-		while (it6505_poweroff(it6505) && pwroffretry++ < 5) {
-			DRM_DEV_DEBUG_DRIVER(dev, "power off fail %d times",
-					     pwroffretry);
-		}
-
-		drm_helper_hpd_irq_event(it6505->bridge.dev);
-		memset(it6505->dpcd, 0, sizeof(it6505->dpcd));
-		DRM_DEV_DEBUG_DRIVER(dev, "power off it6505 success!");
-	}
-
-	mutex_unlock(&it6505->extcon_lock);
-}
-
-static int it6505_use_notifier_module(struct it6505 *it6505)
-{
-	int ret;
-	struct device *dev = &it6505->client->dev;
-
-	it6505->event_nb.notifier_call = it6505_extcon_notifier;
-	INIT_WORK(&it6505->extcon_wq, it6505_extcon_work);
-	ret = devm_extcon_register_notifier(&it6505->client->dev,
-					    it6505->extcon, EXTCON_DISP_DP,
-					    &it6505->event_nb);
-	if (ret) {
-		dev_err(dev, "failed to register notifier for DP");
-		return ret;
-	}
-
-	schedule_work(&it6505->extcon_wq);
-
-	return 0;
-}
-
-static void it6505_remove_notifier_module(struct it6505 *it6505)
-{
-	if (it6505->extcon) {
-		devm_extcon_unregister_notifier(&it6505->client->dev,
-						it6505->extcon,	EXTCON_DISP_DP,
-						&it6505->event_nb);
-
-		flush_work(&it6505->extcon_wq);
-	}
-}
-
 static void __maybe_unused it6505_delayed_audio(struct work_struct *work)
 {
 	struct it6505 *it6505 = container_of(work, struct it6505,
@@ -2945,14 +2864,6 @@ static int it6505_bridge_attach(struct drm_bridge *bridge,
 		return ret;
 	}
 
-	if (it6505->extcon) {
-		ret = it6505_use_notifier_module(it6505);
-		if (ret < 0) {
-			dev_err(dev, "use notifier module failed");
-			return ret;
-		}
-	}
-
 	return 0;
 }
 
@@ -2961,7 +2872,6 @@ static void it6505_bridge_detach(struct drm_bridge *bridge)
 	struct it6505 *it6505 = bridge_to_it6505(bridge);
 
 	flush_work(&it6505->link_works);
-	it6505_remove_notifier_module(it6505);
 }
 
 static enum drm_mode_status
@@ -3105,8 +3015,10 @@ static __maybe_unused int it6505_bridge_suspend(struct device *dev)
 	return it6505_poweroff(it6505);
 }
 
-static SIMPLE_DEV_PM_OPS(it6505_bridge_pm_ops, it6505_bridge_suspend,
-			 it6505_bridge_resume);
+static const struct dev_pm_ops it6505_bridge_pm_ops = {
+	SET_SYSTEM_SLEEP_PM_OPS(it6505_bridge_suspend, it6505_bridge_resume)
+	SET_RUNTIME_PM_OPS(it6505_bridge_suspend, it6505_bridge_resume, NULL)
+};
 
 static int it6505_init_pdata(struct it6505 *it6505)
 {
@@ -3133,6 +3045,134 @@ static int it6505_init_pdata(struct it6505 *it6505)
 	}
 
 	return 0;
+}
+
+static void usb_ports_update(struct it6505 *it6505)
+{
+	struct device *dev = &it6505->client->dev;
+
+	usleep_range(3000, 4000);
+
+	if (it6505->typec_ports[0].has_dp && it6505->typec_ports[1].has_dp)
+		/* Both port available, do nothing to retain the current one. */
+		return;
+	else if (it6505->typec_ports[0].has_dp)
+		it6505->lane_swap = false;
+	else if (it6505->typec_ports[1].has_dp)
+		it6505->lane_swap = true;
+
+	DRM_DEV_DEBUG_DRIVER(dev, "lane_swap: %d", it6505->lane_swap);
+	usleep_range(3000, 4000);
+}
+
+static int usb_mux_set(struct typec_mux_dev *mux,
+		       struct typec_mux_state *state)
+{
+	struct port_data *data = typec_mux_get_drvdata(mux);
+	struct it6505 *it6505 = data->ctx;
+	struct device *dev = &it6505->client->dev;
+	bool old_has_dp = it6505->typec_ports[0].has_dp ||
+			  it6505->typec_ports[1].has_dp;
+	bool new_has_dp;
+
+	mutex_lock(&it6505->extcon_lock);
+	data->has_dp = (state->alt && state->alt->svid == USB_TYPEC_DP_SID &&
+			state->alt->mode == USB_TYPEC_DP_MODE);
+	DRM_DEV_DEBUG_DRIVER(dev, "start usb mux %s set, state: %d",
+			     data->name, data->has_dp);
+	new_has_dp = it6505->typec_ports[0].has_dp ||
+		     it6505->typec_ports[1].has_dp;
+
+	if (it6505->enable_drv_hold) {
+		DRM_DEV_DEBUG_DRIVER(dev, "enable driver hold");
+		goto unlock;
+	}
+
+	usb_ports_update(it6505);
+
+	/* dp on, power on first */
+	if (!old_has_dp && new_has_dp)
+		pm_runtime_get_sync(dev);
+
+	/* dp off, power off last */
+	if (old_has_dp && !new_has_dp) {
+		pm_runtime_put_sync(dev);
+		if (it6505->bridge.dev)
+			drm_helper_hpd_irq_event(it6505->bridge.dev);
+		memset(it6505->dpcd, 0, sizeof(it6505->dpcd));
+	}
+
+unlock:
+	mutex_unlock(&it6505->extcon_lock);
+	return 0;
+}
+
+static int register_usb_ports(struct device *dev,
+			      struct it6505 *it6505)
+{
+	struct typec_mux_desc mux_desc = { };
+	struct fwnode_handle *fwnode;
+	struct port_data *port_data;
+	u8 port_num = 0;
+	int ret, i;
+	bool match;
+
+	device_for_each_child_node(dev, fwnode) {
+		match = fwnode_property_present(fwnode, "reg");
+
+		if (!match)
+			continue;
+
+		if (port_num >= NUMBER_OF_PORT)
+			break;
+
+		port_data = it6505->typec_ports + port_num;
+		port_data->name = fwnode_get_name(fwnode);
+		port_data->ctx = it6505;
+		mux_desc.fwnode = fwnode;
+		mux_desc.drvdata = port_data;
+		mux_desc.name = port_data->name;
+		mux_desc.set = usb_mux_set;
+		port_data->typec_mux =
+			typec_mux_register(dev, &mux_desc);
+
+		if (IS_ERR(port_data->typec_mux)) {
+			ret = PTR_ERR(port_data->typec_mux);
+			DRM_DEV_ERROR(dev,
+				      "mux register for port %d failed: %d",
+				      port_num, ret);
+			break;
+		}
+
+		DRM_DEV_DEBUG_DRIVER(dev, "find port %d: %s",
+				     port_num, mux_desc.name);
+		port_num++;
+	}
+
+	if (port_num != NUMBER_OF_PORT) {
+		DRM_DEV_ERROR(dev,
+			      "%d ports, not %d ports!, check dts",
+			      port_num, NUMBER_OF_PORT);
+
+		for (i = 0; i < port_num; i++) {
+			typec_mux_unregister(it6505->typec_ports[i].typec_mux);
+			it6505->typec_ports[i].typec_mux = NULL;
+			DRM_DEV_DEBUG_DRIVER(dev,
+					     "unregister port %d", i);
+		}
+
+		return -ENODEV;
+	}
+
+	return 0;
+}
+
+static void unregister_usb_ports(struct it6505 *it6505)
+{
+	int i;
+
+	for (i = 0; i < NUMBER_OF_PORT; i++)
+		typec_mux_unregister(it6505->typec_ports[i].typec_mux);
 }
 
 static void it6505_parse_dt(struct it6505 *it6505)
@@ -3342,7 +3382,6 @@ static int it6505_i2c_probe(struct i2c_client *client,
 {
 	struct it6505 *it6505;
 	struct device *dev = &client->dev;
-	struct extcon_dev *extcon;
 	int err, intp_irq;
 
 	it6505 = devm_kzalloc(&client->dev, sizeof(*it6505), GFP_KERNEL);
@@ -3358,16 +3397,7 @@ static int it6505_i2c_probe(struct i2c_client *client,
 	it6505->client = client;
 	i2c_set_clientdata(client, it6505);
 
-	/* get extcon device from DTS */
-	extcon = extcon_get_edev_by_phandle(dev, 0);
-	if (PTR_ERR(extcon) == -EPROBE_DEFER)
-		return -EPROBE_DEFER;
-	if (IS_ERR(extcon)) {
-		dev_err(dev, "can not get extcon device!");
-		return PTR_ERR(extcon);
-	}
-
-	it6505->extcon = extcon;
+	register_usb_ports(dev, it6505);
 
 	it6505->regmap = devm_regmap_init_i2c(client, &it6505_regmap_config);
 	if (IS_ERR(it6505->regmap)) {
@@ -3420,6 +3450,7 @@ static int it6505_i2c_probe(struct i2c_client *client,
 
 	DRM_DEV_DEBUG_DRIVER(dev, "it6505 device name: %s", dev_name(dev));
 	debugfs_init(it6505);
+	pm_runtime_enable(dev);
 
 	it6505->bridge.funcs = &it6505_bridge_funcs;
 	it6505->bridge.type = DRM_MODE_CONNECTOR_DisplayPort;
@@ -3438,6 +3469,7 @@ static int it6505_i2c_remove(struct i2c_client *client)
 	drm_dp_aux_unregister(&it6505->aux);
 	it6505_debugfs_remove(it6505);
 	it6505_poweroff(it6505);
+	unregister_usb_ports(it6505);
 
 	return 0;
 }
