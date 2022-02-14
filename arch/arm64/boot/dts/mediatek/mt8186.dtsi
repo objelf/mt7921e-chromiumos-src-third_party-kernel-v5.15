@@ -1028,6 +1028,15 @@
 			clocks = <&clk13m>;
 		};
 
+		devapc_infra_peri: devapc@10207000 {
+			compatible = "mediatek,mt8186-devapc";
+			reg = <0 0x10207000 0 0x1000>;
+			vio-idx-num = <519>;
+			interrupts = <GIC_SPI 159 IRQ_TYPE_LEVEL_HIGH 0>;
+			clocks = <&infracfg_ao CLK_INFRA_AO_DEVICE_APC>;
+			clock-names = "devapc-infra-clock";
+		};
+
 		gce: mailbox@1022c000 {
 			compatible = "mediatek,mt8186-gce",
 				     "mediatek,mt6779-gce";
