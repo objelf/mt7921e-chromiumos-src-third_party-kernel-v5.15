@@ -2445,5 +2445,10 @@
 				thermal-sensors = <&lvts 9>;
 			};
 		};
+
+		bring-up {
+			compatible = "mediatek,clk-bring-up";
+			clocks = <&infracfg_ao CLK_INFRA_AO_UART0>;
+		};
 	};
 };
