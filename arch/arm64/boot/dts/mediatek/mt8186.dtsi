@@ -82,6 +82,7 @@
 			cpu-idle-states = <&cpu_off_l &cluster_off_l>;
 			next-level-cache = <&l2_0>;
 			#cooling-cells = <2>;
+			mediatek,cci = <&cci>;
 		};
 
 		cpu1: cpu@100 {
@@ -99,6 +100,7 @@
 			cpu-idle-states = <&cpu_off_l &cluster_off_l>;
 			next-level-cache = <&l2_0>;
 			#cooling-cells = <2>;
+			mediatek,cci = <&cci>;
 		};
 
 		cpu2: cpu@200 {
@@ -116,6 +118,7 @@
 			cpu-idle-states = <&cpu_off_l &cluster_off_l>;
 			next-level-cache = <&l2_0>;
 			#cooling-cells = <2>;
+			mediatek,cci = <&cci>;
 		};
 
 		cpu3: cpu@300 {
@@ -133,6 +136,7 @@
 			cpu-idle-states = <&cpu_off_l &cluster_off_l>;
 			next-level-cache = <&l2_0>;
 			#cooling-cells = <2>;
+			mediatek,cci = <&cci>;
 		};
 
 		cpu4: cpu@400 {
@@ -150,6 +154,7 @@
 			cpu-idle-states = <&cpu_off_l &cluster_off_l>;
 			next-level-cache = <&l2_0>;
 			#cooling-cells = <2>;
+			mediatek,cci = <&cci>;
 		};
 
 		cpu5: cpu@500 {
@@ -167,6 +172,7 @@
 			cpu-idle-states = <&cpu_off_l &cluster_off_l>;
 			next-level-cache = <&l2_0>;
 			#cooling-cells = <2>;
+			mediatek,cci = <&cci>;
 		};
 
 		cpu6: cpu@600 {
@@ -184,6 +190,7 @@
 			cpu-idle-states = <&cpu_off_b &cluster_off_b>;
 			next-level-cache = <&l2_1>;
 			#cooling-cells = <2>;
+			mediatek,cci = <&cci>;
 		};
 
 		cpu7: cpu@700 {
@@ -201,6 +208,7 @@
 			cpu-idle-states = <&cpu_off_b &cluster_off_b>;
 			next-level-cache = <&l2_1>;
 			#cooling-cells = <2>;
+			mediatek,cci = <&cci>;
 		};
 
 		idle-states {
