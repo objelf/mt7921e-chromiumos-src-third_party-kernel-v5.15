@@ -1,0 +1,428 @@
+// SPDX-License-Identifier: (GPL-2.0 OR MIT)
+/*
+ * Copyright 2022 Google LLC
+ */
+
+/dts-v1/;
+#include "mt8186-corsola.dtsi"
+#include <dt-bindings/input/input.h>
+#include <dt-bindings/input/gpio-keys.h>
+
+/ {
+	dmic_codec: dmic-codec {
+		compatible = "dmic-codec";
+		num-channels = <2>;
+		wakeup-delay-ms = <50>;
+		status = "okay";
+	};
+
+	gpio_keys: gpio-keys {
+		compatible = "gpio-keys";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pen_eject>;
+		status = "okay";
+
+		pen_insert: pen-insert {
+			label = "Pen Insert";
+			/* Insert = low, eject = high */
+			gpios = <&pio 18 GPIO_ACTIVE_LOW>;
+			linux,code = <SW_PEN_INSERTED>;
+			linux,input-type = <EV_SW>;
+			wakeup-event-action = <EV_ACT_DEASSERTED>;
+			wakeup-source;
+		};
+	};
+
+	rt1019p: rt1019p {
+		compatible = "realtek,rt1019p";
+		pinctrl-names = "default";
+		pinctrl-0 = <&rt1019p_pins_default>;
+		sdb-gpios = <&pio 150 GPIO_ACTIVE_HIGH>;
+		#sound-dai-cells = <0>;
+		status = "okay";
+	};
+
+	fibocom_wwan_fm101: fibocom-wwan-fm101 {
+		compatible = "fibocom,wwan-fm101";
+		lte-w-disable-gpios = <&pio 178 GPIO_ACTIVE_HIGH>;
+		sar-detect-gpios = <&pio 179 GPIO_ACTIVE_HIGH>;
+		m2-power-gpios = <&pio 180 GPIO_ACTIVE_HIGH>;
+		poweroff-gpios = <&pio 181 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&pio 182 GPIO_ACTIVE_HIGH>;
+		status = "okay";
+	};
+};
+
+&btsco {
+	status = "okay";
+};
+
+&cros_ec {
+	typec {
+		compatible = "google,cros-ec-typec";
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		usb_c0: connector@0 {
+			compatible = "usb-c-connector";
+			reg = <0>;
+			label = "left";
+			power-role = "dual";
+			data-role = "host";
+			try-power-role = "source";
+
+			ports {
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				port@1 {
+					reg = <1>;
+
+					typec_port0: endpoint {
+						remote-endpoint = <&ite_typec0>;
+					};
+				};
+			};
+		};
+
+		usb_c1: connector@1 {
+			compatible = "usb-c-connector";
+			reg = <1>;
+			label = "right";
+			power-role = "dual";
+			data-role = "host";
+			try-power-role = "source";
+
+			ports {
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				port@1 {
+					reg = <1>;
+
+					typec_port1: endpoint {
+						remote-endpoint = <&ite_typec1>;
+					};
+				};
+			};
+		};
+	};
+};
+
+&dpi0 {
+	pinctrl-names = "sleep", "default";
+	pinctrl-0 = <&dpi_pin_default>;
+	pinctrl-1 = <&dpi_pin_func>;
+};
+
+&dpi_out {
+	remote-endpoint = <&it6505_in>;
+};
+
+&dsi_out {
+	remote-endpoint = <&ps8640_in>;
+};
+
+&i2c0 {
+	clock-frequency = <400000>;
+
+	ps8640: edp-bridge@8 {
+		compatible = "parade,ps8640";
+		reg = <0x8>;
+		powerdown-gpios = <&pio 96 GPIO_ACTIVE_LOW>;
+		reset-gpios = <&pio 98 GPIO_ACTIVE_LOW>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&ps8640_pins>;
+		vdd12-supply = <&mt6366_vrf12_reg>;
+		vdd33-supply = <&mt6366_vcn33_bt_reg>;
+
+		ports {
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			port@0 {
+				reg = <0>;
+
+				ps8640_in: endpoint {
+					remote-endpoint = <&dsi_out>;
+				};
+			};
+
+			port@1 {
+				reg = <1>;
+
+				ps8640_out: endpoint {
+					remote-endpoint = <&panel_in>;
+				};
+			};
+		};
+
+		aux-bus {
+			panel {
+				compatible = "auo,b116xw03";
+				power-supply = <&pp3300_disp_x>;
+				backlight = <&backlight_lcd0>;
+
+				port {
+					panel_in: endpoint {
+						remote-endpoint = <&ps8640_out>;
+					};
+				};
+			};
+		};
+	};
+};
+
+&i2c1 {
+	touchscreen: touchscreen@5d {
+		compatible = "hid-over-i2c";
+		reg = <0x5d>;
+		interrupt-parent = <&pio>;
+		interrupts = <12 IRQ_TYPE_EDGE_RISING>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&touchscreen_pins>;
+		post-power-on-delay-ms = <10>;
+		hid-descr-addr = <0x0001>;
+		vdd-supply = <&pp3300_s3>;
+		status = "okay";
+	};
+};
+
+&i2c2 {
+	pinctrl-0 = <&i2c2_pins &trackpad_pins>;
+
+	touchpad@15 {
+		compatible = "elan,ekth3000";
+		reg = <0x15>;
+		interrupt-parent = <&pio>;
+		interrupts = <11 IRQ_TYPE_LEVEL_LOW>;
+		pinctrl-names = "default";
+		vcc-supply = <&pp3300_s3>;
+		wakeup-source;
+	};
+
+	touchpad@2c {
+		compatible = "hid-over-i2c";
+		reg = <0x2c>;
+		hid-descr-addr = <0x20>;
+		interrupts-extended = <&pio 11 IRQ_TYPE_LEVEL_LOW>;
+		pinctrl-names = "default";
+		vcc-supply = <&pp3300_s3>;
+		wakeup-source;
+	};
+};
+
+&i2c3 {
+	clock-frequency = <100000>;
+
+	it6505dptx: it6505dptx@5c {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		#sound-dai-cells = <0>;
+		compatible = "ite,it6505";
+		status = "okay";
+		interrupt-parent = <&pio>;
+		interrupts = <8 IRQ_TYPE_LEVEL_LOW 8 0>;
+		reg = <0x5c>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&it6505_pins>;
+		ovdd-supply = <&mt6366_vsim2_reg>;
+		pwr18-supply = <&pp1800_dpbrdg_dx>;
+		reset-gpios = <&pio 177 0>;
+		hpd-gpios = <&pio 10 0>;
+		no-laneswap;
+		max-lane-count = <2>;
+		max-dpi-pixel-clock = <150000>;
+
+		port {
+			it6505_in: endpoint {
+				remote-endpoint = <&dpi_out>;
+			};
+		};
+
+		ite_mux0 {
+			compatible = "typec-mode-switch";
+			reg = <0>;
+			accessory;
+
+			port {
+				ite_typec0: endpoint {
+					remote-endpoint = <&typec_port0>;
+				};
+			};
+		};
+
+		ite_mux1 {
+			compatible = "typec-mode-switch";
+			reg = <1>;
+			accessory;
+
+			port {
+				ite_typec1: endpoint {
+					remote-endpoint = <&typec_port1>;
+				};
+			};
+		};
+	};
+};
+
+&i2c5 {
+	rt5682s: rt5682s@1a {
+		compatible = "realtek,rt5682s";
+		reg = <0x1a>;
+		interrupt-parent = <&pio>;
+		interrupts = <17 IRQ_TYPE_EDGE_BOTH>;
+		realtek,jd-src = <1>;
+		AVDD-supply = <&mt6366_vio18_reg>;
+		MICVDD-supply = <&pp3300_z2>;
+		#sound-dai-cells = <0>;
+	};
+};
+
+&keyboard_controller {
+	function-row-physmap = <
+		MATRIX_KEY(0x00, 0x02, 0)	/* T1 */
+		MATRIX_KEY(0x03, 0x02, 0)	/* T2 */
+		MATRIX_KEY(0x02, 0x02, 0)	/* T3 */
+		MATRIX_KEY(0x01, 0x02, 0)	/* T4 */
+		MATRIX_KEY(0x03, 0x04, 0)	/* T5 */
+		MATRIX_KEY(0x02, 0x04, 0)	/* T6 */
+		MATRIX_KEY(0x01, 0x04, 0)	/* T7 */
+		MATRIX_KEY(0x02, 0x09, 0)	/* T8 */
+		MATRIX_KEY(0x01, 0x09, 0)	/* T9 */
+		MATRIX_KEY(0x00, 0x04, 0)	/* T10 */
+	>;
+
+	linux,keymap = <
+		MATRIX_KEY(0x00, 0x02, KEY_BACK)
+		MATRIX_KEY(0x03, 0x02, KEY_REFRESH)
+		MATRIX_KEY(0x02, 0x02, KEY_ZOOM)
+		MATRIX_KEY(0x01, 0x02, KEY_SCALE)
+		MATRIX_KEY(0x03, 0x04, KEY_BRIGHTNESSDOWN)
+		MATRIX_KEY(0x02, 0x04, KEY_BRIGHTNESSUP)
+		MATRIX_KEY(0x01, 0x04, KEY_MICMUTE)
+		MATRIX_KEY(0x02, 0x09, KEY_MUTE)
+		MATRIX_KEY(0x01, 0x09, KEY_VOLUMEDOWN)
+		MATRIX_KEY(0x00, 0x04, KEY_VOLUMEUP)
+		CROS_STD_MAIN_KEYMAP
+	>;
+};
+
+&mmc1_pins_default {
+	pins_clk {
+		drive-strength = <MTK_DRIVE_8mA>;
+	};
+
+	pins_cmd_dat {
+		drive-strength = <MTK_DRIVE_8mA>;
+	};
+};
+
+&mmc1_pins_uhs {
+	pins_clk {
+		drive-strength = <MTK_DRIVE_8mA>;
+	};
+
+	pins_cmd_dat {
+		drive-strength = <MTK_DRIVE_8mA>;
+	};
+};
+
+&mt6366_vcn33_bt_reg {
+        /* ps8640 3.3V power supply */
+        regulator-max-microvolt = <3300000>;
+};
+
+&mt6366_vsim2_reg {
+	regulator-min-microvolt = <2700000>;
+	regulator-max-microvolt = <2700000>;
+};
+
+&pio {
+	dpi_pin_default: dpi_pin_default {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO103__FUNC_GPIO103>,
+				 <PINMUX_GPIO104__FUNC_GPIO104>,
+				 <PINMUX_GPIO105__FUNC_GPIO105>,
+				 <PINMUX_GPIO106__FUNC_GPIO106>,
+				 <PINMUX_GPIO107__FUNC_GPIO107>,
+				 <PINMUX_GPIO108__FUNC_GPIO108>,
+				 <PINMUX_GPIO109__FUNC_GPIO109>,
+				 <PINMUX_GPIO110__FUNC_GPIO110>,
+				 <PINMUX_GPIO111__FUNC_GPIO111>,
+				 <PINMUX_GPIO112__FUNC_GPIO112>,
+				 <PINMUX_GPIO113__FUNC_GPIO113>,
+				 <PINMUX_GPIO114__FUNC_GPIO114>,
+				 <PINMUX_GPIO101__FUNC_GPIO101>,
+				 <PINMUX_GPIO100__FUNC_GPIO100>,
+				 <PINMUX_GPIO102__FUNC_GPIO102>,
+				 <PINMUX_GPIO99__FUNC_GPIO99>;
+			drive-strength = <MTK_DRIVE_10mA>;
+			output-low;
+		};
+	};
+
+	dpi_pin_func: dpi_pin_func {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO103__FUNC_DPI_DATA0>,
+				 <PINMUX_GPIO104__FUNC_DPI_DATA1>,
+				 <PINMUX_GPIO105__FUNC_DPI_DATA2>,
+				 <PINMUX_GPIO106__FUNC_DPI_DATA3>,
+				 <PINMUX_GPIO107__FUNC_DPI_DATA4>,
+				 <PINMUX_GPIO108__FUNC_DPI_DATA5>,
+				 <PINMUX_GPIO109__FUNC_DPI_DATA6>,
+				 <PINMUX_GPIO110__FUNC_DPI_DATA7>,
+				 <PINMUX_GPIO111__FUNC_DPI_DATA8>,
+				 <PINMUX_GPIO112__FUNC_DPI_DATA9>,
+				 <PINMUX_GPIO113__FUNC_DPI_DATA10>,
+				 <PINMUX_GPIO114__FUNC_DPI_DATA11>,
+				 <PINMUX_GPIO101__FUNC_DPI_HSYNC>,
+				 <PINMUX_GPIO100__FUNC_DPI_VSYNC>,
+				 <PINMUX_GPIO102__FUNC_DPI_DE>,
+				 <PINMUX_GPIO99__FUNC_DPI_PCLK>;
+			drive-strength = <MTK_DRIVE_10mA>;
+		};
+	};
+
+	it6505_pins: it6505_pins {
+		pins_hpd {
+			pinmux = <PINMUX_GPIO10__FUNC_GPIO10>;
+			input-enable;
+			bias-pull-up;
+		};
+
+		pins_int {
+			pinmux = <PINMUX_GPIO8__FUNC_GPIO8>;
+			input-enable;
+			bias-pull-up;
+		};
+
+		pins_reset {
+			pinmux = <PINMUX_GPIO177__FUNC_GPIO177>;
+			output-low;
+			bias-pull-up;
+		};
+	};
+
+	pen_eject: peneject {
+		pen_eject {
+			pinmux = <PINMUX_GPIO18__FUNC_GPIO18>;
+			input-enable;
+			/* External pull-up. */
+			bias-disable;
+		};
+	};
+};
+
+&sound {
+	compatible = "mediatek,mt8186-mt6366-rt1019-rt5682s-sound";
+	status = "okay";
+
+	playback-codecs {
+		sound-dai = <&it6505dptx>,<&rt1019p>;
+	};
+
+	headset-codec {
+		sound-dai = <&rt5682s>;
+	};
+};
