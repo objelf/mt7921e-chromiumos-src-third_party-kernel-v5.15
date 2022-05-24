@@ -622,4 +622,12 @@ config COMMON_CLK_MT8516_AUDSYS
 	help
 	  This driver supports MediaTek MT8516 audsys clocks.
 
+config COMMON_CLK_MTK_FREQ_HOPPING
+	tristate "MediaTek frequency hopping driver"
+	depends on ARCH_MEDIATEK || COMPILE_TEST
+	select COMMON_CLK_MEDIATEK
+	help
+          This driver supports frequency hopping and Spread Spectrum Clocking
+	  control for some MediaTek SoCs.
+
 endmenu

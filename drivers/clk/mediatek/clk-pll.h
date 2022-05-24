@@ -54,4 +54,7 @@ int mtk_clk_register_plls(struct device_node *node,
 void mtk_clk_unregister_plls(const struct mtk_pll_data *plls, int num_plls,
 			     struct clk_hw_onecell_data *clk_data);
 
+extern bool mtk_fh_set_rate(const char *pll_name, unsigned long dds,
+			    int postdiv);
+
 #endif /* __DRV_CLK_MTK_PLL_H */
