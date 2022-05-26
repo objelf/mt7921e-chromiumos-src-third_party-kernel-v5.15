@@ -147,6 +147,8 @@ static const struct mtk_mmsys_driver_data mt8195_vdosys0_driver_data = {
 static const struct mtk_mmsys_driver_data mt8195_vdosys1_driver_data = {
 	.io_start = 0x1c100000,
 	.clk_driver = "clk-mt8195-vdo1",
+	.routes = mmsys_mt8195_vdo1_routing_table,
+	.num_routes = ARRAY_SIZE(mmsys_mt8195_vdo1_routing_table),
 };
 
 static const struct mtk_mmsys_match_data mt8195_mmsys_match_data = {
