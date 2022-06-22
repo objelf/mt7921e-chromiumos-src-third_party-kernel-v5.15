@@ -83,4 +83,5 @@ config MTK_SVS
 	  chip process corner, temperatures and other factors. Then DVFS
 	  driver could apply SVS bank voltage to PMIC/Buck.
 
+source "drivers/soc/mediatek/systracker/Kconfig"
 endmenu

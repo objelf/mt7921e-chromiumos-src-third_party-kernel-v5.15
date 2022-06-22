@@ -1037,6 +1037,14 @@
 			clock-names = "devapc-infra-clock";
 		};
 
+		systracker: systracker@10208000 {
+			compatible = "mediatek,bus_dbg-v2";
+			reg = <0 0x10208000 0 0x1000>,
+				<0 0x10001000 0 0x1000>;
+			mediatek,bus_dbg_con_offset = <0x2fc>;
+			interrupts = <GIC_SPI 158 IRQ_TYPE_LEVEL_HIGH 0>;
+		};
+
 		gce: mailbox@1022c000 {
 			compatible = "mediatek,mt8186-gce",
 				     "mediatek,mt6779-gce";
