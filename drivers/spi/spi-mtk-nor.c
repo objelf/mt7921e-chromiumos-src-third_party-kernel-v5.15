@@ -133,17 +133,65 @@ static inline void mtk_nor_rmw(struct mtk_nor *sp, u32 reg, u32 set, u32 clr)
 	writel(val, sp->base + reg);
 }
 
+void print_nor_initial_register(struct mtk_nor *sp)
+{
+	u32 reg, addr;
+
+	reg = readl(sp->base + MTK_NOR_REG_IRQ_EN);
+	dev_err(sp->dev, "nor MTK_NOR_REG_IRQ_EN register:0x%x\n", reg);
+
+	reg = readl(sp->base + MTK_NOR_REG_IRQ_STAT);
+	dev_err(sp->dev, "nor MTK_NOR_REG_IRQ_STAT register:0x%x\n", reg);
+
+	reg = readl(sp->base + MTK_NOR_REG_DMA_CTL);
+	dev_err(sp->dev, "nor MTK_NOR_REG_DMA_CTL register:0x%x\n", reg);
+
+	reg = readl(sp->base + MTK_NOR_REG_WP);
+	dev_err(sp->dev, "nor wp register:0x%x\n", reg);
+
+	reg = readl(sp->base + MTK_NOR_REG_CFG2);
+	dev_err(sp->dev, "nor MTK_NOR_REG_CFG2 register:0x%x\n", reg);
+
+	reg = readl(sp->base + MTK_NOR_REG_CFG3);
+	dev_err(sp->dev, "nor MTK_NOR_REG_CFG3 register:0x%x\n", reg);
+
+	pr_err("dump nor register\n");
+	for (addr = 0; addr < 0x740; addr += 4) {
+		reg = readl(sp->base + addr);
+		pr_err("0x%x: 0x%x\n", sp->base + addr, reg);
+	}
+	pr_err("dump nor register end\n");
+}
+
+u32 debug_timeout = 0;
 static inline int mtk_nor_cmd_exec(struct mtk_nor *sp, u32 cmd, ulong clk)
 {
 	ulong delay = CLK_TO_US(sp, clk);
 	u32 reg;
 	int ret;
+	u32 reg_cfg1;
 
 	writel(cmd, sp->base + MTK_NOR_REG_CMD);
 	ret = readl_poll_timeout(sp->base + MTK_NOR_REG_CMD, reg, !(reg & cmd),
 				 delay / 3, (delay + 1) * 200);
-	if (ret < 0)
+	if (ret < 0) {
+		debug_timeout = 1;
 		dev_err(sp->dev, "command %u timeout.\n", cmd);
+		print_nor_initial_register(sp);
+		pr_err("stop in here(%d), set 0x11000060 as 0x1F to continue...\n", __LINE__);
+	}
+
+	reg_cfg1 = readl(sp->base + MTK_NOR_REG_CFG1);
+	while (debug_timeout) {
+		reg = readl(sp->base + MTK_NOR_REG_CFG1);
+		if ((reg & 0x1F) == 0x1F) {
+			debug_timeout = 0;
+		}
+		msleep(100);
+	};
+
+	writel(reg_cfg1, sp->base + MTK_NOR_REG_CFG1);
+
 	return ret;
 }
 
@@ -356,6 +404,7 @@ static int mtk_nor_dma_exec(struct mtk_nor *sp, u32 from, unsigned int length,
 	int ret = 0;
 	ulong delay;
 	u32 reg;
+	u32 reg_cfg1;
 
 	writel(from, sp->base + MTK_NOR_REG_DMA_FADR);
 	writel(dma_addr, sp->base + MTK_NOR_REG_DMA_DADR);
@@ -387,8 +436,23 @@ static int mtk_nor_dma_exec(struct mtk_nor *sp, u32 from, unsigned int length,
 					 (delay + 1) * 100);
 	}
 
-	if (ret < 0)
+	if (ret < 0) {
+		debug_timeout = 1;
 		dev_err(sp->dev, "dma read timeout.\n");
+		print_nor_initial_register(sp);
+		pr_err("stop in here(%d), set 0x11000060 as 0x1F to continue...\n", __LINE__);
+	}
+
+	reg_cfg1 = readl(sp->base + MTK_NOR_REG_CFG1);
+	while (debug_timeout) {
+		reg = readl(sp->base + MTK_NOR_REG_CFG1);
+		if ((reg & 0x1F) == 0x1F) {
+			debug_timeout = 0;
+		}
+		msleep(100);
+	};
+
+	writel(reg_cfg1, sp->base + MTK_NOR_REG_CFG1);
 
 	return ret;
 }
@@ -729,10 +793,17 @@ static int mtk_nor_enable_clk(struct mtk_nor *sp)
 
 static void mtk_nor_init(struct mtk_nor *sp)
 {
+	u32 value;
+
 	writel(0, sp->base + MTK_NOR_REG_IRQ_EN);
 	writel(MTK_NOR_IRQ_MASK, sp->base + MTK_NOR_REG_IRQ_STAT);
 
 	writel(MTK_NOR_ENABLE_SF_CMD, sp->base + MTK_NOR_REG_WP);
+	value = readl(sp->base + MTK_NOR_REG_WP);
+	if (value != MTK_NOR_ENABLE_SF_CMD) {
+		dev_err(sp->dev, "write nor wp register fail, value:0x%x\n", value);
+	}
+
 	mtk_nor_rmw(sp, MTK_NOR_REG_CFG2, MTK_NOR_WR_CUSTOM_OP_EN, 0);
 	mtk_nor_rmw(sp, MTK_NOR_REG_CFG3,
 		    MTK_NOR_DISABLE_WREN | MTK_NOR_DISABLE_SR_POLL, 0);
