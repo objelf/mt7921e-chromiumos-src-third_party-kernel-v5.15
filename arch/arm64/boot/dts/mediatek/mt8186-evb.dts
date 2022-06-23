@@ -17,7 +17,7 @@
 		stdout-path = "serial0:921600n8";
 	};
 
-	memory {
+	memory@40000000 {
 		device_type = "memory";
 		reg = <0 0x40000000 0 0x80000000>;
 	};
@@ -32,53 +32,43 @@
 };
 
 &i2c1 {
+	status = "okay";
 	clock-frequency = <400000>;
 	i2c-scl-internal-delay-ns = <8000>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c1_pins>;
-	#address-cells = <1>;
-	#size-cells = <0>;
-	status = "okay";
 };
 
 &i2c2 {
+	status = "okay";
 	clock-frequency = <400000>;
 	i2c-scl-internal-delay-ns = <10000>;
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c2_pins>;
-	#address-cells = <1>;
-	#size-cells = <0>;
-	status = "okay";
 };
 
 &i2c3 {
+	status = "okay";
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c3_pins>;
-	#address-cells = <1>;
-	#size-cells = <0>;
-	status = "okay";
 };
 
 &i2c4 {
+	status = "okay";
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c4_pins>;
-	#address-cells = <1>;
-	#size-cells = <0>;
-	status = "okay";
 };
 
 &i2c5 {
+	status = "okay";
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c5_pins>;
-	#address-cells = <1>;
-	#size-cells = <0>;
-	status = "okay";
 };
 
 &i2c6 {
+	status = "okay";
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c6_pins>;
-	status = "okay";
 };
 
 &i2c7 {
@@ -88,19 +78,19 @@
 };
 
 &i2c8 {
+	status = "okay";
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c8_pins>;
-	status = "okay";
 };
 
 &i2c9 {
+	status = "okay";
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c9_pins>;
-	status = "okay";
 };
 
 &pio {
-	i2c0_pins: i2c0{
+	i2c0_pins: i2c0-pins {
 		pins-sda-scl {
 			pinmux = <PINMUX_GPIO128__FUNC_SDA0>,
 				 <PINMUX_GPIO127__FUNC_SCL0>;
@@ -111,7 +101,7 @@
 		};
 	};
 
-	i2c1_pins: i2c1{
+	i2c1_pins: i2c1-pins {
 		pins-sda-scl {
 			pinmux = <PINMUX_GPIO130__FUNC_SDA1>,
 				 <PINMUX_GPIO129__FUNC_SCL1>;
@@ -122,7 +112,7 @@
 		};
 	};
 
-	i2c2_pins: i2c2{
+	i2c2_pins: i2c2-pins {
 		pins-sda-scl {
 			pinmux = <PINMUX_GPIO132__FUNC_SDA2>,
 				 <PINMUX_GPIO131__FUNC_SCL2>;
@@ -133,7 +123,7 @@
 		};
 	};
 
-	i2c3_pins: i2c3{
+	i2c3_pins: i2c3-pins {
 		pins-sda-scl {
 			pinmux = <PINMUX_GPIO134__FUNC_SDA3>,
 				 <PINMUX_GPIO133__FUNC_SCL3>;
@@ -144,7 +134,7 @@
 		};
 	};
 
-	i2c4_pins: i2c4{
+	i2c4_pins: i2c4-pins {
 		pins-sda-scl {
 			pinmux = <PINMUX_GPIO136__FUNC_SDA4>,
 				 <PINMUX_GPIO135__FUNC_SCL4>;
@@ -155,7 +145,7 @@
 		};
 	};
 
-	i2c5_pins: i2c5{
+	i2c5_pins: i2c5-pins {
 		pins-sda-scl {
 			pinmux = <PINMUX_GPIO138__FUNC_SDA5>,
 				 <PINMUX_GPIO137__FUNC_SCL5>;
@@ -166,7 +156,7 @@
 		};
 	};
 
-	i2c6_pins: i2c6{
+	i2c6_pins: i2c6-pins {
 		pins-sda-scl {
 			pinmux = <PINMUX_GPIO140__FUNC_SDA6>,
 				 <PINMUX_GPIO139__FUNC_SCL6>;
@@ -177,7 +167,7 @@
 		};
 	};
 
-	i2c7_pins: i2c7{
+	i2c7_pins: i2c7-pins {
 		pins-sda-scl {
 			pinmux = <PINMUX_GPIO142__FUNC_SDA7>,
 				 <PINMUX_GPIO141__FUNC_SCL7>;
@@ -188,7 +178,7 @@
 		};
 	};
 
-	i2c8_pins: i2c8{
+	i2c8_pins: i2c8-pins {
 		pins-sda-scl {
 			pinmux = <PINMUX_GPIO144__FUNC_SDA8>,
 				 <PINMUX_GPIO143__FUNC_SCL8>;
@@ -199,7 +189,7 @@
 		};
 	};
 
-	i2c9_pins: i2c9{
+	i2c9_pins: i2c9-pins {
 		pins-sda-scl {
 			pinmux = <PINMUX_GPIO146__FUNC_SDA9>,
 				 <PINMUX_GPIO145__FUNC_SCL9>;
@@ -212,11 +202,11 @@
 };
 
 &u3phy0 {
-	status="okay";
+	status = "okay";
 };
 
 &u3phy1 {
-	status="okay";
+	status = "okay";
 };
 
 &uart0 {
