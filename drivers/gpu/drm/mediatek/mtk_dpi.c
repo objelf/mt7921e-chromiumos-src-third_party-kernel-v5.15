@@ -14,6 +14,7 @@
 #include <linux/of_graph.h>
 #include <linux/pinctrl/consumer.h>
 #include <linux/platform_device.h>
+#include <linux/soc/mediatek/mtk-mmsys.h>
 #include <linux/types.h>
 
 #include <video/videomode.h>
@@ -28,6 +29,7 @@
 #include "mtk_disp_drv.h"
 #include "mtk_dpi_regs.h"
 #include "mtk_drm_ddp_comp.h"
+#include "mtk_drm_drv.h"
 
 enum mtk_dpi_out_bit_num {
 	MTK_DPI_OUT_BIT_NUM_8BITS,
@@ -85,6 +87,7 @@ struct mtk_dpi {
 	struct pinctrl_state *pins_dpi;
 	u32 output_fmt;
 	int refcount;
+	struct device *mmsys_dev;
 };
 
 static inline struct mtk_dpi *bridge_to_dpi(struct drm_bridge *b)
@@ -125,6 +128,7 @@ struct mtk_dpi_conf {
 	bool edge_sel_en;
 	const u32 *output_fmts;
 	u32 num_output_fmts;
+	bool rgb888_dual_enable;
 };
 
 static void mtk_dpi_mask(struct mtk_dpi *dpi, u32 offset, u32 val, u32 mask)
@@ -393,6 +397,9 @@ static void mtk_dpi_dual_edge(struct mtk_dpi *dpi)
 		mtk_dpi_mask(dpi, DPI_OUTPUT_SETTING,
 			     dpi->output_fmt == MEDIA_BUS_FMT_RGB888_2X12_LE ?
 			     EDGE_SEL : 0, EDGE_SEL);
+	if (dpi->conf->rgb888_dual_enable)
+		mtk_mmsys_ddp_dpi_confing(dpi->mmsys_dev, DPI_RGB888_DDR_CON,
+					  DPI_FORMAT_MASK, NULL);
 	} else {
 		mtk_dpi_mask(dpi, DPI_DDR_SETTING, DDR_EN | DDR_4PHASE, 0);
 	}
@@ -705,8 +712,10 @@ static int mtk_dpi_bind(struct device *dev, struct device *master, void *data)
 {
 	struct mtk_dpi *dpi = dev_get_drvdata(dev);
 	struct drm_device *drm_dev = data;
+	struct mtk_drm_private *priv = drm_dev->dev_private;
 	int ret;
 
+	dpi->mmsys_dev = priv->mmsys_dev;
 	ret = drm_simple_encoder_init(drm_dev, &dpi->encoder,
 				      DRM_MODE_ENCODER_TMDS);
 	if (ret) {
@@ -813,6 +822,15 @@ static const struct mtk_dpi_conf mt8183_conf = {
 	.max_clock_khz = 100000,
 	.output_fmts = mt8183_output_fmts,
 	.num_output_fmts = ARRAY_SIZE(mt8183_output_fmts),
+};
+
+static const struct mtk_dpi_conf mt8186_conf = {
+		.cal_factor = mt8183_calculate_factor,
+		.reg_h_fre_con = 0xe0,
+		.max_clock_khz = 150000,
+		.output_fmts = mt8183_output_fmts,
+		.num_output_fmts = ARRAY_SIZE(mt8183_output_fmts),
+		.rgb888_dual_enable = true,
 };
 
 static const struct mtk_dpi_conf mt8192_conf = {
@@ -941,6 +959,9 @@ static const struct of_device_id mtk_dpi_of_ids[] = {
 	},
 	{ .compatible = "mediatek,mt8183-dpi",
 	  .data = &mt8183_conf,
+	},
+	{ .compatible = "mediatek,mt8186-dpi",
+	  .data = &mt8186_conf,
 	},
 	{ .compatible = "mediatek,mt8192-dpi",
 	  .data = &mt8192_conf,
