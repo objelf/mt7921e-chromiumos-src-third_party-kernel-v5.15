@@ -89,4 +89,7 @@ void mtk_mmsys_mixer_in_config(struct device *dev, int idx, bool alpha_sel, u16 
 void mtk_mmsys_mixer_in_channel_swap(struct device *dev, int idx, bool channel_swap,
 				     struct cmdq_pkt *cmdq_pkt);
 
+void mtk_mmsys_ddp_dpi_confing(struct device *dev, u32 mask, u32 val,
+			       struct cmdq_pkt *cmdq_pkt);
+
 #endif /* __MTK_MMSYS_H */
