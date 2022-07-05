@@ -7,6 +7,10 @@
 #include "mcu.h"
 #include "eeprom.h"
 
+static bool mt7921_disable_cnm = true;
+module_param_named(disable_cnm, mt7921_disable_cnm, bool, 0644);
+MODULE_PARM_DESC(disable_cnm, "disable concurrent network support");
+
 static const struct ieee80211_iface_limit if_limits[] = {
 	{
 		.max = MT7921_MAX_INTERFACES,
@@ -25,6 +29,27 @@ static const struct ieee80211_iface_combination if_comb[] = {
 		.max_interfaces = MT7921_MAX_INTERFACES,
 		.num_different_channels = 1,
 		.beacon_int_infra_match = true,
+	},
+};
+
+static const struct ieee80211_iface_limit if_limits_chanctx[] = {
+	{
+		.max = 2,
+		.types = BIT(NL80211_IFTYPE_STATION),
+	},
+	{
+		.max = 1,
+		.types = BIT(NL80211_IFTYPE_AP),
+	}
+};
+
+static const struct ieee80211_iface_combination if_comb_chanctx[] = {
+	{
+		.limits = if_limits_chanctx,
+		.n_limits = ARRAY_SIZE(if_limits_chanctx),
+		.max_interfaces = 2,
+		.num_different_channels = 2,
+		.beacon_int_infra_match = false,
 	}
 };
 
@@ -60,11 +85,20 @@ static int mt7921_check_offload_capability(struct mt7921_dev *dev)
 	fw_can_roc =  mktime64(year, mon, day, hour, min, sec) >=
 		      mktime64(2022, 7, 15, 12, 1, 1);
 
-	if (!fw_can_roc) {
+	if (!fw_can_roc || mt7921_disable_cnm) {
 		dev->ops->remain_on_channel = NULL;
 		dev->ops->cancel_remain_on_channel = NULL;
+		dev->ops->add_chanctx = NULL;
+		dev->ops->remove_chanctx = NULL;
+		dev->ops->change_chanctx = NULL;
+		dev->ops->assign_vif_chanctx = NULL;
+		dev->ops->unassign_vif_chanctx = NULL;
+		dev->ops->mgd_prepare_tx = NULL;
+		dev->ops->mgd_complete_tx = NULL;
 
 		wiphy->flags &= ~WIPHY_FLAG_HAS_REMAIN_ON_CHANNEL;
+		wiphy->iface_combinations = if_comb;
+		wiphy->n_iface_combinations = ARRAY_SIZE(if_comb);
 	}
 
 	return 0;
@@ -90,12 +124,12 @@ mt7921_init_wiphy(struct ieee80211_hw *hw)
 	hw->sta_data_size = sizeof(struct mt7921_sta);
 	hw->vif_data_size = sizeof(struct mt7921_vif);
 
-	wiphy->iface_combinations = if_comb;
+	wiphy->iface_combinations = if_comb_chanctx;
 	wiphy->flags &= ~(WIPHY_FLAG_IBSS_RSN | WIPHY_FLAG_4ADDR_AP |
 			  WIPHY_FLAG_4ADDR_STATION);
 	wiphy->interface_modes = BIT(NL80211_IFTYPE_STATION) |
 				 BIT(NL80211_IFTYPE_AP);
-	wiphy->n_iface_combinations = ARRAY_SIZE(if_comb);
+	wiphy->n_iface_combinations = ARRAY_SIZE(if_comb_chanctx);
 	wiphy->max_remain_on_channel_duration = 5000;
 	wiphy->max_scan_ie_len = MT76_CONNAC_SCAN_IE_LEN;
 	wiphy->max_scan_ssids = 4;
