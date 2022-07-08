@@ -83,23 +83,27 @@ enum mtk_mdp_comp_id {
 	/* MDP */
 	MDP_COMP_CAMIN,		/* 9 */
 	MDP_COMP_CAMIN2,	/* 10 */
-	MDP_COMP_RDMA0,		/* 11 */
-	MDP_COMP_AAL0,		/* 12 */
-	MDP_COMP_CCORR0,	/* 13 */
-	MDP_COMP_RSZ0,		/* 14 */
-	MDP_COMP_RSZ1,		/* 15 */
-	MDP_COMP_TDSHP0,	/* 16 */
-	MDP_COMP_COLOR0,	/* 17 */
-	MDP_COMP_PATH0_SOUT,	/* 18 */
-	MDP_COMP_PATH1_SOUT,	/* 19 */
-	MDP_COMP_WROT0,		/* 20 */
-	MDP_COMP_WDMA,		/* 21 */
+	MDP_COMP_WPEIN,		/* 11 */
+	MDP_COMP_RDMA0,		/* 12 */
+	MDP_COMP_HDR0,		/* 13 */
+	MDP_COMP_AAL0,		/* 14 */
+	MDP_COMP_CCORR0,	/* 15 */
+	MDP_COMP_RSZ0,		/* 16 */
+	MDP_COMP_RSZ1,		/* 17 */
+	MDP_COMP_TDSHP0,	/* 18 */
+	MDP_COMP_COLOR0,	/* 19 */
+	MDP_COMP_PATH0_SOUT,	/* 20 */
+	MDP_COMP_PATH1_SOUT,	/* 21 */
+	MDP_COMP_MDPOT0,	/* 22 */
+	MDP_COMP_WROT0,		/* 23 */
+	MDP_COMP_WROT1,		/* 24 */
+	CMDQ_ENG_MDP_PATH1,	/* 25 */
+	MDP_COMP_WDMA,		/* 26 */
 
 	/* Dummy Engine */
-	MDP_COMP_RDMA1,		/* 22 */
-	MDP_COMP_RSZ2,		/* 23 */
-	MDP_COMP_TDSHP1,	/* 24 */
-	MDP_COMP_WROT1,		/* 25 */
+	MDP_COMP_RDMA1, 	/* 27 */
+	MDP_COMP_RSZ2,		/* 28 */
+	MDP_COMP_TDSHP1,	/* 29 */
 
 	MDP_MAX_COMP_COUNT	/* ALWAYS keep at the end */
 };
@@ -118,6 +122,8 @@ enum mdp_comp_type {
 	MDP_COMP_TYPE_DRE,
 	MDP_COMP_TYPE_CCORR,
 	MDP_COMP_TYPE_HDR,
+	MDP_COMP_TYPE_AAL,
+	MDP_COMP_TYPE_MDPOT,
 
 	MDP_COMP_TYPE_IMGI,
 	MDP_COMP_TYPE_WPEI,

@@ -87,6 +87,7 @@ struct img_crop {
 #define IMG_CTRL_FLAG_SHARPNESS	BIT(4)
 #define IMG_CTRL_FLAG_HDR	BIT(5)
 #define IMG_CTRL_FLAG_DRE	BIT(6)
+#define IMG_CTRL_FLAG_RSZ	BIT(7)
 
 struct img_input {
 	struct img_image_buffer buffer;
@@ -182,6 +183,7 @@ struct mdp_rdma_subfrm {
 
 struct mdp_rdma_data {
 	u32 src_ctrl;
+	u32 comp_ctrl;
 	u32 control;
 	u32 iova[IMG_MAX_PLANES];
 	u32 iova_end[IMG_MAX_PLANES];
@@ -192,6 +194,35 @@ struct mdp_rdma_data {
 	u32 ufo_dec_c;
 	u32 transform;
 	struct mdp_rdma_subfrm subfrms[IMG_MAX_SUBFRAMES];
+} __packed;
+
+struct mdp_hdr_subfrm {
+	u32 win_size;
+	u32 src;
+	u32 clip_ofst0;
+	u32 clip_ofst1;
+	u32 hist_ctrl_0;
+	u32 hist_ctrl_1;
+	u32 hdr_top;
+	u32 hist_addr;
+} __packed;
+
+struct mdp_hdr_data {
+	u32 top;
+	u32 relay;
+	struct mdp_hdr_subfrm   subfrms[IMG_MAX_SUBFRAMES];
+} __packed;
+
+struct mdp_aal_subfrm {
+	u32 src;
+	u32 clip;
+	u32 clip_ofst;
+} __packed;
+
+struct mdp_aal_data {
+	u32 cfg_main;
+	u32 cfg;
+	struct mdp_aal_subfrm   subfrms[IMG_MAX_SUBFRAMES];
 } __packed;
 
 struct mdp_rsz_subfrm {
@@ -206,6 +237,29 @@ struct mdp_rsz_data {
 	u32 control1;
 	u32 control2;
 	struct mdp_rsz_subfrm subfrms[IMG_MAX_SUBFRAMES];
+} __packed;
+
+struct mdp_tdshp_subfrm {
+	u32 src;
+	u32 clip;
+	u32 clip_ofst;
+	u32 hist_cfg_0;
+	u32 hist_cfg_1;
+} __packed;
+
+struct mdp_tdshp_data {
+	u32 cfg;
+	struct mdp_tdshp_subfrm subfrms[IMG_MAX_SUBFRAMES];
+} __packed;
+
+struct mdp_color_subfrm {
+	u32 in_hsize;
+	u32 in_vsize;
+} __packed;
+
+struct mdp_color_data {
+	u32 start;
+	struct mdp_color_subfrm subfrms[IMG_MAX_SUBFRAMES];
 } __packed;
 
 struct mdp_wrot_subfrm {
@@ -260,7 +314,11 @@ struct img_compparam {
 	u32 num_subfrms;
 	union {
 		struct mdp_rdma_data rdma;
+		struct mdp_hdr_data hdr;
+		struct mdp_aal_data aal;
 		struct mdp_rsz_data rsz;
+		struct mdp_tdshp_data tdshp;
+		struct mdp_color_data color;
 		struct mdp_wrot_data wrot;
 		struct mdp_wdma_data wdma;
 		struct isp_data isp;

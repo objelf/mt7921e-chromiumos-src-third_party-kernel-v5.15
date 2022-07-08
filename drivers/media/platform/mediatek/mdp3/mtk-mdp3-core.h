@@ -39,6 +39,7 @@ struct mdp_platform_config {
 	bool	rdma_upsample_repeat_only;
 	bool	rsz_disable_dcm_small_sample;
 	bool	wrot_filter_constraint;
+	u32	tdshp_dyn_contrast_version;
 };
 
 /* indicate which mutex is used by each pipepline */
