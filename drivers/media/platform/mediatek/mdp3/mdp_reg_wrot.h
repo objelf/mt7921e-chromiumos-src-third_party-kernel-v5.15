@@ -11,6 +11,7 @@
 #define VIDO_MAIN_BUF_SIZE          0x008
 #define VIDO_SOFT_RST               0x010
 #define VIDO_SOFT_RST_STAT          0x014
+#define VIDO_INT                    0x01c
 #define VIDO_CROP_OFST              0x020
 #define VIDO_TAR_SIZE               0x024
 #define VIDO_OFST_ADDR              0x02c
@@ -30,6 +31,7 @@
 #define VIDO_BASE_ADDR_V            0xf08
 
 /* MASK */
+#define VIDO_INT_MASK                   0x00000007
 #define VIDO_CTRL_MASK                  0xf530711f
 #define VIDO_MAIN_BUF_SIZE_MASK         0x1fff7f77
 #define VIDO_SOFT_RST_MASK              0x00000001

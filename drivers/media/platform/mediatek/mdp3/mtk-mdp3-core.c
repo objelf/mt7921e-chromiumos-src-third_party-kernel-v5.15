@@ -46,9 +46,35 @@ static const struct mtk_mdp_driver_data mt8183_mdp_driver_data = {
 	.mdp_mutex_table_idx = mt8183_mutex_idx,
 };
 
+static const struct of_device_id mt8186_mdp_probe_infra[MDP_INFRA_MAX] = {
+	[MDP_INFRA_MMSYS] = { .compatible = "mediatek,mt8186-mdpsys" },
+	[MDP_INFRA_MUTEX] = { .compatible = "mediatek,mt8186-mdp3-mutex" },
+	[MDP_INFRA_SCP] = { .compatible = "mediatek,mt8186-scp" }
+};
+
+static const u32 mt8186_mutex_idx[MDP_MAX_COMP_COUNT] = {
+	[MDP_COMP_RDMA0] = MUTEX_MOD_IDX_MDP_RDMA0,
+	[MDP_COMP_RSZ0] = MUTEX_MOD_IDX_MDP_RSZ0,
+	[MDP_COMP_RSZ1] = MUTEX_MOD_IDX_MDP_RSZ1,
+	[MDP_COMP_TDSHP0] = MUTEX_MOD_IDX_MDP_TDSHP0,
+	[MDP_COMP_WROT0] = MUTEX_MOD_IDX_MDP_WROT0,
+	[MDP_COMP_HDR0] = MUTEX_MOD_IDX_MDP_HDR0,
+	[MDP_COMP_AAL0] = MUTEX_MOD_IDX_MDP_AAL0,
+	[MDP_COMP_COLOR0] = MUTEX_MOD_IDX_MDP_COLOR0,
+};
+
+static const struct mtk_mdp_driver_data mt8186_mdp_driver_data = {
+	.mdp_probe_infra = mt8186_mdp_probe_infra,
+	.mdp_cfg = &mt8183_plat_cfg,
+	.mdp_mutex_table_idx = mt8186_mutex_idx,
+};
+
 static const struct of_device_id mdp_of_ids[] = {
 	{ .compatible = "mediatek,mt8183-mdp3-rdma",
 	  .data = &mt8183_mdp_driver_data,
+	},
+	{ .compatible = "mediatek,mt8186-mdp3-rdma",
+	  .data = &mt8186_mdp_driver_data,
 	},
 	{},
 };
