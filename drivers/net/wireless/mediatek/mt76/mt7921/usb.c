@@ -305,8 +305,6 @@ static int mt7921u_suspend(struct usb_interface *intf, pm_message_t state)
 	mt76u_stop_rx(&dev->mt76);
 	mt76u_stop_tx(&dev->mt76);
 
-	set_bit(MT76_STATE_SUSPEND, &dev->mphy.state);
-
 	return 0;
 
 failed:
@@ -345,8 +343,6 @@ static int mt7921u_resume(struct usb_interface *intf)
 		if (err)
 			goto failed;
 	}
-
-	clear_bit(MT76_STATE_SUSPEND, &dev->mphy.state);
 
 	err = mt76u_resume_rx(&dev->mt76);
 	if (err < 0)
