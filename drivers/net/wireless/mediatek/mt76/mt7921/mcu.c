@@ -227,7 +227,7 @@ int mt7921_mcu_fill_message(struct mt76_dev *mdev, struct sk_buff *skb,
 	if (cmd == MCU_UNI_CMD(HIF_CTRL) ||
 	    cmd == MCU_UNI_CMD(SUSPEND) ||
 	    cmd == MCU_UNI_CMD(OFFLOAD))
-		mdev->mcu.timeout = HZ;
+		mdev->mcu.timeout = 3 * HZ;
 	else
 		mdev->mcu.timeout = 3 * HZ;
 
@@ -420,6 +420,7 @@ mt7921_mcu_rx_unsolicited_event(struct mt7921_dev *dev, struct sk_buff *skb)
 		mt7921_mcu_debug_msg_event(dev, skb);
 		break;
 	case MCU_EVENT_COREDUMP:
+		if (!dev->fw_assert) dev_info(dev->mt76.dev, "[Debug] MCU_EVENT_COREDUMP"); //Debug
 		dev->fw_assert = true;
 		mt76_connac_mcu_coredump_event(&dev->mt76, skb,
 					       &dev->coredump);
