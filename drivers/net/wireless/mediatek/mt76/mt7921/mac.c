@@ -1424,6 +1424,7 @@ void mt7921_reset(struct mt76_dev *mdev)
 	struct mt7921_dev *dev = container_of(mdev, struct mt7921_dev, mt76);
 	struct mt76_connac_pm *pm = &dev->pm;
 
+	dump_stack(); //Debug
 	if (!dev->hw_init_done)
 		return;
 

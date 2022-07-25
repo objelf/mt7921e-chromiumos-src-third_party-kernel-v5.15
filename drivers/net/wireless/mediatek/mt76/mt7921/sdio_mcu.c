@@ -118,6 +118,7 @@ int mt7921s_mcu_drv_pmctrl(struct mt7921_dev *dev)
 
 	if (err < 0) {
 		dev_err(dev->mt76.dev, "driver own failed\n");
+		dump_stack(); //Debug
 		err = -EIO;
 		goto out;
 	}
@@ -161,6 +162,7 @@ out:
 
 	if (err < 0) {
 		dev_err(dev->mt76.dev, "firmware own failed\n");
+		dump_stack(); //Debug
 		clear_bit(MT76_STATE_PM, &mphy->state);
 		return -EIO;
 	}

@@ -36,10 +36,11 @@ struct sk_buff *mt76_mcu_get_response(struct mt76_dev *dev,
 		return NULL;
 
 	timeout = expires - jiffies;
-	wait_event_timeout(dev->mcu.wait,
+	timeout = wait_event_timeout(dev->mcu.wait,
 			   (!skb_queue_empty(&dev->mcu.res_q) ||
 			    test_bit(MT76_MCU_RESET, &dev->phy.state)),
 			   timeout);
+	if (jiffies_to_msecs(timeout) < 2000) dev_info(dev->dev, "[Debug] %s wait event remain %u ms", __func__, jiffies_to_msecs(timeout)); //Debug
 	return skb_dequeue(&dev->mcu.res_q);
 }
 EXPORT_SYMBOL_GPL(mt76_mcu_get_response);
