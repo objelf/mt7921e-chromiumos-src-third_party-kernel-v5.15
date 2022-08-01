@@ -1692,6 +1692,10 @@ static int
 mt7921_add_chanctx(struct ieee80211_hw *hw,
 			struct ieee80211_chanctx_conf *ctx)
 {
+
+	struct mt7921_dev *dev = mt7921_hw_dev(hw);
+
+	dev_err(dev->mt76.dev, "++ %s %d\n", __func__, __LINE__);
 	return 0;
 }
 
@@ -1699,6 +1703,9 @@ static void
 mt7921_remove_chanctx(struct ieee80211_hw *hw,
 			struct ieee80211_chanctx_conf *ctx)
 {
+	struct mt7921_dev *dev = mt7921_hw_dev(hw);
+
+	dev_err(dev->mt76.dev, "++%s %d\n", __func__, __LINE__);
 }
 
 static void mt7921_ctx_iter(void *priv, u8 *mac,
@@ -1719,6 +1726,8 @@ mt7921_change_chanctx(struct ieee80211_hw *hw,
 			u32 changed)
 {
 	struct mt7921_phy *phy = mt7921_hw_phy(hw);
+	struct mt7921_dev *dev = mt7921_hw_dev(hw);
+dev_err(dev->mt76.dev, "++%s %d\n", __func__, __LINE__);
 
 	mt7921_mutex_acquire(phy->dev);
 	ieee80211_iterate_active_interfaces(phy->mt76->hw,
@@ -1736,6 +1745,7 @@ mt7921_assign_vif_chanctx(struct ieee80211_hw *hw,
 	struct mt7921_dev *dev = mt7921_hw_dev(hw);
 
 	mt7921_mutex_acquire(dev);
+dev_err(dev->mt76.dev, "++%s %d\n", __func__, __LINE__);
 	mvif->ctx = ctx;
 	mt7921_mutex_release(dev);
 
@@ -1751,6 +1761,7 @@ mt7921_unassign_vif_chanctx(struct ieee80211_hw *hw,
 	struct mt7921_dev *dev = mt7921_hw_dev(hw);
 
 	mt7921_mutex_acquire(dev);
+dev_err(dev->mt76.dev, "++%s %d\n", __func__, __LINE__);
 	mvif->ctx = NULL;
 	mt7921_mutex_release(dev);
 }

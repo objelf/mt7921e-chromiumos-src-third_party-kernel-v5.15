@@ -1355,6 +1355,7 @@ int mt76_connac_mcu_uni_set_chctx(struct mt76_phy *phy, struct mt76_vif *mvif,
 			.band = band,
 		},
 	};
+dev_err(mdev->dev, "++%s %d\n", __func__, __LINE__);
 
 	switch (chandef->width) {
 	case NL80211_CHAN_WIDTH_40:
