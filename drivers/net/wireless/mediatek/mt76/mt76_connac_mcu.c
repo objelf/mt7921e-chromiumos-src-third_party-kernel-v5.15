@@ -391,17 +391,17 @@ void mt76_connac_mcu_sta_basic_tlv(struct sk_buff *skb,
 	switch (vif->type) {
 	case NL80211_IFTYPE_MESH_POINT:
 	case NL80211_IFTYPE_AP:
-		if (vif->p2p)
-			conn_type = CONNECTION_P2P_GC;
-		else
+	//	if (vif->p2p)
+	//		conn_type = CONNECTION_P2P_GC;
+	//	else
 			conn_type = CONNECTION_INFRA_STA;
 		basic->conn_type = cpu_to_le32(conn_type);
 		basic->aid = cpu_to_le16(sta->aid);
 		break;
 	case NL80211_IFTYPE_STATION:
-		if (vif->p2p)
-			conn_type = CONNECTION_P2P_GO;
-		else
+	//	if (vif->p2p)
+	//		conn_type = CONNECTION_P2P_GO;
+	//	else
 			conn_type = CONNECTION_INFRA_AP;
 		basic->conn_type = cpu_to_le32(conn_type);
 		basic->aid = cpu_to_le16(vif->bss_conf.aid);
