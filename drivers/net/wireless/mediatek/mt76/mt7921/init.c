@@ -7,6 +7,10 @@
 #include "mcu.h"
 #include "eeprom.h"
 
+static bool mt7921_disable_cnm = true;
+module_param_named(disable_cnm, mt7921_disable_cnm, bool, 0644);
+MODULE_PARM_DESC(disable_cnm, "disable concurrent network support");
+
 static const struct ieee80211_iface_limit if_limits[] = {
 	{
 		.max = MT7921_MAX_INTERFACES,
@@ -81,7 +85,7 @@ static int mt7921_check_offload_capability(struct mt7921_dev *dev)
 	fw_can_roc =  mktime64(year, mon, day, hour, min, sec) >=
 		      mktime64(2022, 7, 15, 12, 1, 1);
 
-	if (!fw_can_roc) {
+	if (!fw_can_roc || mt7921_disable_cnm) {
 		dev->ops->remain_on_channel = NULL;
 		dev->ops->cancel_remain_on_channel = NULL;
 		dev->ops->add_chanctx = NULL;
