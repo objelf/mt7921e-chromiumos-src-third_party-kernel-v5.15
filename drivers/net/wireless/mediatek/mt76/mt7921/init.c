@@ -7,7 +7,7 @@
 #include "mcu.h"
 #include "eeprom.h"
 
-static bool mt7921_disable_cnm = true;
+static bool mt7921_disable_cnm = false;
 module_param_named(disable_cnm, mt7921_disable_cnm, bool, 0644);
 MODULE_PARM_DESC(disable_cnm, "disable concurrent network support");
 
@@ -99,6 +99,8 @@ static int mt7921_check_offload_capability(struct mt7921_dev *dev)
 		wiphy->flags &= ~WIPHY_FLAG_HAS_REMAIN_ON_CHANNEL;
 		wiphy->iface_combinations = if_comb;
 		wiphy->n_iface_combinations = ARRAY_SIZE(if_comb);
+		wiphy->interface_modes &= ~(BIT(NL80211_IFTYPE_P2P_CLIENT) |
+					    BIT(NL80211_IFTYPE_P2P_GO));
 	}
 
 	return 0;
@@ -128,7 +130,9 @@ mt7921_init_wiphy(struct ieee80211_hw *hw)
 	wiphy->flags &= ~(WIPHY_FLAG_IBSS_RSN | WIPHY_FLAG_4ADDR_AP |
 			  WIPHY_FLAG_4ADDR_STATION);
 	wiphy->interface_modes = BIT(NL80211_IFTYPE_STATION) |
-				 BIT(NL80211_IFTYPE_AP);
+				 BIT(NL80211_IFTYPE_AP) |
+				 BIT(NL80211_IFTYPE_P2P_CLIENT) |
+				 BIT(NL80211_IFTYPE_P2P_GO);
 	wiphy->n_iface_combinations = ARRAY_SIZE(if_comb_chanctx);
 	wiphy->max_remain_on_channel_duration = 5000;
 	wiphy->max_scan_ie_len = MT76_CONNAC_SCAN_IE_LEN;
