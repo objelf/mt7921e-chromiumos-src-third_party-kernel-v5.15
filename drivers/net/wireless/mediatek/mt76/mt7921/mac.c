@@ -46,6 +46,14 @@ bool mt7921_mac_wtbl_update(struct mt7921_dev *dev, int idx, u32 mask)
 			 0, 5000);
 }
 
+void mt7921_mac_sta_airtime_clear(struct mt7921_dev *dev,
+				  struct mt7921_sta *msta)
+{
+	mt7921_mac_wtbl_update(dev, msta->wcid.idx,
+			       MT_WTBL_UPDATE_ADM_COUNT_CLEAR);
+	memset(msta->airtime_ac, 0, sizeof(msta->airtime_ac));
+}
+
 void mt7921_mac_sta_poll(struct mt7921_dev *dev)
 {
 	static const u8 ac_to_tid[] = {
@@ -94,17 +102,20 @@ void mt7921_mac_sta_poll(struct mt7921_dev *dev)
 			tx_time[i] = msta->airtime_ac[i] - tx_last;
 			rx_time[i] = msta->airtime_ac[i + 4] - rx_last;
 
+			if (msta->airtime_ac[i] < tx_last ||
+			    msta->airtime_ac[i + 4] < rx_last) {
+				pr_err("addr = %x, i = %d, tx time 1 = %d, tx time 2 = %d\n", addr, i, msta->airtime_ac[i], tx_last);
+				pr_err("addr = %x, i = %d, rx time 1 = %d, rx time 2 = %d\n", addr, i, msta->airtime_ac[i + 4], rx_last);
+			}
+
 			if ((tx_last | rx_last) & BIT(30))
 				clear = true;
 
 			addr += 8;
 		}
 
-		if (clear) {
-			mt7921_mac_wtbl_update(dev, idx,
-					       MT_WTBL_UPDATE_ADM_COUNT_CLEAR);
-			memset(msta->airtime_ac, 0, sizeof(msta->airtime_ac));
-		}
+		if (clear)
+			mt7921_mac_sta_airtime_clear(dev, msta);
 
 		if (!msta->wcid.sta)
 			continue;

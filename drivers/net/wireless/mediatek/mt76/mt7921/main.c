@@ -721,8 +721,7 @@ int mt7921_mac_sta_add(struct mt76_dev *mdev, struct ieee80211_vif *vif,
 	if (vif->type == NL80211_IFTYPE_STATION)
 		mvif->wep_sta = msta;
 
-	mt7921_mac_wtbl_update(dev, idx,
-			       MT_WTBL_UPDATE_ADM_COUNT_CLEAR);
+	mt7921_mac_sta_airtime_clear(dev, msta);
 
 	ret = mt7921_mcu_sta_update(dev, sta, vif, true,
 				    MT76_STA_INFO_STATE_NONE);
@@ -748,8 +747,7 @@ void mt7921_mac_sta_assoc(struct mt76_dev *mdev, struct ieee80211_vif *vif,
 		mt76_connac_mcu_uni_add_bss(&dev->mphy, vif, &mvif->sta.wcid,
 					    true);
 
-	mt7921_mac_wtbl_update(dev, msta->wcid.idx,
-			       MT_WTBL_UPDATE_ADM_COUNT_CLEAR);
+	mt7921_mac_sta_airtime_clear(dev, msta);
 
 	mt7921_mcu_sta_update(dev, sta, vif, true, MT76_STA_INFO_STATE_ASSOC);
 
@@ -767,8 +765,7 @@ void mt7921_mac_sta_remove(struct mt76_dev *mdev, struct ieee80211_vif *vif,
 	mt76_connac_pm_wake(&dev->mphy, &dev->pm);
 
 	mt7921_mcu_sta_update(dev, sta, vif, false, MT76_STA_INFO_STATE_NONE);
-	mt7921_mac_wtbl_update(dev, msta->wcid.idx,
-			       MT_WTBL_UPDATE_ADM_COUNT_CLEAR);
+	mt7921_mac_sta_airtime_clear(dev, msta);
 
 	if (vif->type == NL80211_IFTYPE_STATION) {
 		struct mt7921_vif *mvif = (struct mt7921_vif *)vif->drv_priv;
