@@ -20,3 +20,7 @@
 &touchscreen {
 	status = "disabled";
 };
+
+&target {
+	temperature = <65000>;
+};

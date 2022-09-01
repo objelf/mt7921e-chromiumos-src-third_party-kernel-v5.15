@@ -15,3 +15,7 @@
 &mt6366codec {
 	mediatek,dmic-mode = <0>; /* two-wire */
 };
+
+&target {
+	temperature = <65000>;
+};
