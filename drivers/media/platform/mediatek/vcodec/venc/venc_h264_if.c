@@ -174,8 +174,7 @@ static unsigned int h264_get_profile(struct venc_h264_inst *inst,
 		mtk_vcodec_err(inst, "unsupported CONSTRAINED_BASELINE");
 		return 0;
 	case V4L2_MPEG_VIDEO_H264_PROFILE_EXTENDED:
-		mtk_vcodec_err(inst, "unsupported EXTENDED");
-		return 0;
+		return 88;
 	default:
 		mtk_vcodec_debug(inst, "unsupported profile %d", profile);
 		return 100;
