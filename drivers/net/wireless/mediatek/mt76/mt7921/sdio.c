@@ -203,7 +203,6 @@ static int mt7921s_suspend(struct device *__dev)
 	struct mt76_dev *mdev = &dev->mt76;
 	int err;
 
-	dev_info(dev->mt76.dev, "[Debug] %s +", __func__); //Debug
 	pm->suspended = true;
 	set_bit(MT76_STATE_SUSPEND, &mdev->phy.state);
 
@@ -245,7 +244,6 @@ static int mt7921s_suspend(struct device *__dev)
 
 	sdio_set_host_pm_flags(func, MMC_PM_KEEP_POWER);
 
-	dev_info(dev->mt76.dev, "[Debug] %s -", __func__); //Debug
 	return 0;
 
 restore_txrx_worker:
@@ -267,7 +265,6 @@ restore_suspend:
 	if (err < 0)
 		mt7921_reset(&dev->mt76);
 
-	dev_info(dev->mt76.dev, "[Debug] %s - err=%d", __func__, err); //Debug
 	return err;
 }
 
@@ -279,7 +276,6 @@ static int mt7921s_resume(struct device *__dev)
 	struct mt76_dev *mdev = &dev->mt76;
 	int err;
 
-	dev_info(dev->mt76.dev, "[Debug] %s +", __func__); //Debug
 	clear_bit(MT76_STATE_SUSPEND, &mdev->phy.state);
 
 	err = mt7921_mcu_drv_pmctrl(dev);
@@ -302,7 +298,6 @@ failed:
 	if (err < 0)
 		mt7921_reset(&dev->mt76);
 
-	dev_info(dev->mt76.dev, "[Debug] %s -", __func__); //Debug
 	return err;
 }
 
