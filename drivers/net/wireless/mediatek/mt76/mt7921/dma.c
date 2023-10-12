@@ -206,7 +206,7 @@ int mt7921_wpdma_reset(struct mt7921_dev *dev, bool force)
 		return err;
 
 	mt76_for_each_q_rx(&dev->mt76, i)
-		mt76_queue_rx_reset(dev, i, true);
+		mt76_queue_rx_reset(dev, i, false);
 
 	return 0;
 }
