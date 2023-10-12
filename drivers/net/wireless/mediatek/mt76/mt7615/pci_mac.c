@@ -127,7 +127,7 @@ void mt7615_dma_reset(struct mt7615_dev *dev)
 		mt76_queue_tx_cleanup(dev, dev->mt76.q_mcu[i], true);
 
 	mt76_for_each_q_rx(&dev->mt76, i)
-		mt76_queue_rx_reset(dev, i);
+		mt76_queue_rx_reset(dev, i, true);
 
 	mt76_tx_status_check(&dev->mt76, true);
 

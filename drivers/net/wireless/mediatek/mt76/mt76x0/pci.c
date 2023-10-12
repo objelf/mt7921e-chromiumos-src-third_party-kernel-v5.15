@@ -279,7 +279,7 @@ static int mt76x0e_resume(struct pci_dev *pdev)
 
 	local_bh_disable();
 	mt76_for_each_q_rx(mdev, i) {
-		mt76_queue_rx_reset(dev, i);
+		mt76_queue_rx_reset(dev, i, true);
 		napi_enable(&mdev->napi[i]);
 		napi_schedule(&mdev->napi[i]);
 	}

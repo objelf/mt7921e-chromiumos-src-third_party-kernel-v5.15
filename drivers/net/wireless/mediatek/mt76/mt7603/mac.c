@@ -1455,7 +1455,7 @@ static void mt7603_mac_watchdog_reset(struct mt7603_dev *dev)
 		mt76_queue_tx_cleanup(dev, dev->mphy.q_tx[i], true);
 
 	mt76_for_each_q_rx(&dev->mt76, i) {
-		mt76_queue_rx_reset(dev, i);
+		mt76_queue_rx_reset(dev, i, true);
 	}
 
 	mt76_tx_status_check(&dev->mt76, true);
